@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>משחק תרגול – פרטי לבוש בערבית</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ffe082, #80deea);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: white;
+      width: 90%;
+      max-width: 850px;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    h1 {
+      color: #6a1b9a;
+      margin-bottom: 10px;
+    }
+
+    .question {
+      font-size: 2rem;
+      margin: 25px 0;
+      color: #0d47a1;
+      font-weight: bold;
+    }
+
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: bold;
+    }
+
+    .answer-btn {
+      background: #f3e5f5;
+      color: #4a148c;
+    }
+
+    .answer-btn:hover {
+      transform: scale(1.03);
+      background: #ce93d8;
+    }
+
+    .correct {
+      background: #81c784 !important;
+      color: white;
+    }
+
+    .wrong {
+      background: #ef5350 !important;
+      color: white;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .message {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      min-height: 40px;
+      font-weight: bold;
+    }
+
+    .retry-btn {
+      margin-top: 15px;
+      background: #ff9800;
+      color: white;
+      display: none;
+    }
+
+    .next-btn {
+      margin-top: 15px;
+      background: #42a5f5;
+      color: white;
+      display: none;
+    }
+
+    .final-screen {
+      display: none;
+    }
+
+    .score {
+      font-size: 2rem;
+      color: #2e7d32;
+      margin: 20px 0;
+    }
+
+    .restart-btn {
+      background: #8e24aa;
+      color: white;
+      padding: 16px 28px;
+      font-size: 1.1rem;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="game-screen">
+      <h1>🎮 תרגול מילים בערבית – פרטי לבוש</h1>
+      <p>בחרו את התרגום הנכון בעברית</p>
+
+      <div class="question" id="question"></div>
+
+      <div class="answers" id="answers"></div>
+
+      <div class="message" id="message"></div>
+
+      <button class="retry-btn" id="retryBtn">נסה שוב</button>
+      <button class="next-btn" id="nextBtn">לשאלה הבאה</button>
+
+      <div class="status">
+        <div>✅ נכונות: <span id="correctCount">0</span></div>
+        <div>❌ טעויות: <span id="wrongCount">0</span></div>
+        <div>📚 שאלה: <span id="questionNumber">1</span></div>
+      </div>
+    </div>
+
+    <div class="final-screen" id="finalScreen">
+      <h1>🏆 כל הכבוד!</h1>
+      <div class="score" id="finalScore"></div>
+      <button class="restart-btn" onclick="restartGame()">שחק שוב</button>
+    </div>
+  </div>
+
+  <script>
+    const words = [
+      { arabic: 'בַּנְטַלּוֹן', hebrew: 'מכנסיים' },
+      { arabic: 'בְּלוּזָה', hebrew: 'חולצה' },
+      { arabic: 'תַּנּוּרָה', hebrew: 'חצאית' },
+      { arabic: 'טַקִיָּה', hebrew: 'כובע' },
+      { arabic: 'מָאְיוֹ', hebrew: 'בגד ים' },
+      { arabic: 'סַנְדַל', hebrew: 'סנדל' },
+      { arabic: 'כַּבּוּת', hebrew: 'מעיל' },
+      { arabic: 'שַׁחְ'וִיטָה', hebrew: 'נעל בית' },
+      { arabic: 'שַׁבְשַׁב', hebrew: 'כפכף' },
+      { arabic: 'כּוֹנְדַקָה', hebrew: 'נעל' },
+      { arabic: 'גַ'ארְבֵּין', hebrew: 'גרביים' },
+      { arabic: 'פוּסְתַּאן', hebrew: 'שמלה' },
+      { arabic: 'פָאנֵלָה', hebrew: 'גופיה' },
+      { arabic: 'קַמִיס', hebrew: 'חולצה מכופתרת' }
+    ];
+
+    let shuffledWords = [];
+    let currentIndex = 0;
+    let correct = 0;
+    let wrong = 0;
+    let currentWord = null;
+
+    const questionEl = document.getElementById('question');
+    const answersEl = document.getElementById('answers');
+    const messageEl = document.getElementById('message');
+    const retryBtn = document.getElementById('retryBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const correctCountEl = document.getElementById('correctCount');
+    const wrongCountEl = document.getElementById('wrongCount');
+    const questionNumberEl = document.getElementById('questionNumber');
+
+    function shuffle(array) {
+      return [...array].sort(() => Math.random() - 0.5);
+    }
+
+    function startGame() {
+      shuffledWords = shuffle(words);
+      currentIndex = 0;
+      correct = 0;
+      wrong = 0;
+      updateStatus();
+      showQuestion();
+    }
+
+    function showQuestion() {
+      messageEl.textContent = '';
+      retryBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      answersEl.innerHTML = '';
+
+      currentWord = shuffledWords[currentIndex];
+      questionEl.textContent = currentWord.arabic;
+
+      questionNumberEl.textContent = `${currentIndex + 1} / ${words.length}`;
+
+      const wrongOptions = shuffle(
+        words.filter(w => w.hebrew !== currentWord.hebrew)
+      ).slice(0, 7);
+
+      const options = shuffle([
+        currentWord.hebrew,
+        ...wrongOptions.map(w => w.hebrew)
+      ]);
+
+      options.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(btn, option);
+        answersEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(button, selected) {
+      const buttons = document.querySelectorAll('.answer-btn');
+      buttons.forEach(btn => btn.disabled = true);
+
+      if (selected === currentWord.hebrew) {
+        button.classList.add('correct');
+        messageEl.textContent = '🎉 נכון מאוד!';
+        correct++;
+        nextBtn.style.display = 'inline-block';
+      } else {
+        button.classList.add('wrong');
+        messageEl.textContent = '❌ טעות! נסה שוב';
+        wrong++;
+        retryBtn.style.display = 'inline-block';
+
+        buttons.forEach(btn => {
+          if (btn.textContent === currentWord.hebrew) {
+            btn.classList.add('correct');
+          }
+        });
+      }
+
+      updateStatus();
+    }
+
+    retryBtn.onclick = () => {
+      showQuestion();
+    };
+
+    nextBtn.onclick = () => {
+      currentIndex++;
+
+      if (currentIndex >= shuffledWords.length) {
+        endGame();
+      } else {
+        showQuestion();
+      }
+    };
+
+    function updateStatus() {
+      correctCountEl.textContent = correct;
+      wrongCountEl.textContent = wrong;
+    }
+
+    function endGame() {
+      document.getElementById('game-screen').style.display = 'none';
+      document.getElementById('finalScreen').style.display = 'block';
+
+      document.getElementById('finalScore').textContent =
+        `הצלחת ${correct} מתוך ${words.length} מילים!`;
+    }
+
+    function restartGame() {
+      document.getElementById('game-screen').style.display = 'block';
+      document.getElementById('finalScreen').style.display = 'none';
+      startGame();
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
